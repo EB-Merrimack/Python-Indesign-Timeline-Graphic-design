@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse  # Correct import for Ellipse
 from PIL import Image, ImageDraw
 import numpy as np
 
@@ -14,65 +13,46 @@ df = df[df['Day'] == 'Day 1']
 df['Start time'] = pd.to_datetime(df['Start time'], format='%m/%d/%Y %I:%M:%S%p', errors='coerce')
 df['End time'] = pd.to_datetime(df['end time'], format='%m/%d/%Y %I:%M:%S%p', errors='coerce')
 
-# Define updated colors for different activity types with alpha transparency
+# Define colors for different activity types
 activity_colors = {
-    "sleep": (0, 0, 255, 128),         # Blue with 50% transparency
-    "relaxing": (0, 255, 0, 200),      # Green with 80% transparency
-    "travel": (255, 255, 0, 255),      # Yellow with full opacity
-    "physical-fun": (255, 0, 0, 255),  # Red with full opacity
-    "mental-fun": (128, 0, 128, 180),  # Purple with 70% transparency
-    "eating": (255, 165, 0, 200),      # Orange with 80% transparency
-    "gaming": (0, 255, 255, 150)       # Cyan with 60% transparency
+    "sleep": (0, 0, 255, 255),         # Blue
+    "relaxing": (0, 255, 0, 255),      # Green
+    "travel": (255, 255, 0, 255),      # Yellow
+    "physical-fun": (255, 0, 0, 255),  # Red
+    "mental-fun": (128, 0, 128, 255),  # Purple
+    "eating": (255, 165, 0, 255),      # Orange
+    "gaming": (0, 255, 255, 255)       # Cyan
 }
 
 # Function to generate a spiral path with more space between the points
 def generate_spiral_path(num_points, radius):
-    theta = np.linspace(0, 8 * np.pi, num_points)  # More rotations for a larger spiral
+    theta = np.linspace(0, 6 * np.pi, num_points)  # More rotations for a larger spiral
     r = np.linspace(0, radius, num_points)  # Radial distance increases
     x = r * np.cos(theta)  # X coordinate
     y = r * np.sin(theta)  # Y coordinate
     return x, y
 
-# Function to create a solid mini star icon (same size as the sparkles)
-def create_mini_star(color, size=3):  # Adjusted size to be smaller
-    img = Image.new('RGBA', (size, size), (255, 255, 255, 0))  # Smaller size
+# Function to create a mini star icon
+def create_mini_star(color, size=10):
+    img = Image.new('RGBA', (size, size), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
-    
-    # Star shape coordinates (adjusted for smaller size)
     points = [
         (size * 0.5, 0), (size * 0.6, size * 0.35), (size, size * 0.35),
         (size * 0.7, size * 0.6), (size * 0.8, size), (size * 0.5, size * 0.75),
         (size * 0.2, size), (size * 0.3, size * 0.6), (0, size * 0.35), (size * 0.4, size * 0.35)
     ]
-    
-    # Draw the star with the given color
     draw.polygon(points, fill=color)
     return img
 
-# Function to generate shades of a color by modifying brightness and alpha in a smooth way
-def generate_shades(base_color, num_shades=5):
-    shades = []
-    r, g, b, a = base_color
-    # Create smooth variations in brightness and opacity
-    for i in range(num_shades):
-        # Evenly adjust brightness by scaling the RGB values in a gradient-like way
-        factor = 1 + (i / (num_shades - 1)) * 0.4  # Gradual change, more spread-out variations
-        new_r = int(min(255, r * factor))
-        new_g = int(min(255, g * factor))
-        new_b = int(min(255, b * factor))
-        new_a = int(min(255, a + (np.sin(i * np.pi / (num_shades - 1)) * 40)))  # Smooth alpha variation
-        shades.append((new_r, new_g, new_b, new_a))
-    return shades
-
 # Function to draw the timeline
 def draw_timeline(df, activity_colors):
-    fig, ax = plt.subplots(figsize=(24, 36))
-    ax.set_xlim(-30, 30)
+    fig, ax = plt.subplots(figsize=(36, 24))  # Set the figure size to 36 by 24
+    ax.set_xlim(-50, 50)
     ax.set_ylim(-50, 50)
     ax.axis('off')
     fig.patch.set_facecolor('#00008B')
 
-    # Generate a larger spiral path
+    # Generate a larger spiral path with more space between activities
     x, y = generate_spiral_path(len(df), 30)
 
     # Add the magic wand at the start (optional, replace the path if you don't want it)
@@ -83,36 +63,53 @@ def draw_timeline(df, activity_colors):
     except FileNotFoundError:
         print("Magic wand image not found!")
 
+    # Create a list to store legend entries with burst numbers
+    legend_entries = []
+
+    # For storing the connection between bursts and text
+    activity_positions = []
+
+    # Label burst count
+    burst_counter = 1
+
+    # We will start the bursts after the first full rotation, or after a certain index
+    burst_started = False
+
     for index, row in df.iterrows():
         start_time, end_time = row['Start time'], row['End time']
         activity_type = row['Activity Type'].split(', ')[0]
-        base_color = activity_colors.get(activity_type, (255, 255, 255, 255))
+        color = activity_colors.get(activity_type, (255, 255, 255, 255))
 
-        # Generate multiple shades of the activity color for the burst effect
-        shades = generate_shades(base_color, num_shades=7)
-        
-        # Draw mini stars along the spiral outline with different shades
-        num_mini_stars = 12  # Number of mini stars around the outline
-        angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
-        burst_radius = 3  # Radius of the burst, adjusted for smaller size
-        for i in range(num_mini_stars):
-            x_pos = x[index] + burst_radius * np.cos(angle[i])
-            y_pos = y[index] + burst_radius * np.sin(angle[i])
-            # Alternate between different shades
-            shade = shades[i % len(shades)]
-            mini_star_icon = create_mini_star(shade, size=3)  # Smaller burst stars to match sparkle size
-            ax.imshow(mini_star_icon, extent=[x_pos - 1.5, x_pos + 1.5, y_pos - 1.5, y_pos + 1.5], aspect='auto')
+        if burst_started:
+            # Draw mini stars along the spiral outline
+            mini_star_icon = create_mini_star(color, size=12)
+            num_mini_stars = 12  # Number of mini stars around the outline
+            angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
+            for i in range(num_mini_stars):
+                # Create circular positions for mini stars around the main position
+                x_pos = x[index] + 2 * np.cos(angle[i])
+                y_pos = y[index] + 2 * np.sin(angle[i])
+                ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto')
 
-        # Add shadow for the activity info (text and icon)
-        ax.text(x[index], y[index] + 1.5, row['Activity Description'], ha='center', va='center', fontsize=18, 
-                color='black', alpha=0.7, fontweight='bold', zorder=2)  # Shadow
-        ax.text(x[index], y[index] + 1.5, row['Activity Description'], ha='center', va='center', fontsize=18, 
-                color='white', fontweight='bold', zorder=3)  # Main text
-        
-        ax.text(x[index], y[index] + 3, f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}", 
-                ha='center', va='top', fontsize=12, color='black', alpha=0.7, zorder=2)  # Shadow
-        ax.text(x[index], y[index] + 3, f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}", 
-                ha='center', va='top', fontsize=12, color='white', zorder=3)  # Main time
+            # Add text with activity description and time range
+            activity_description = f"{row['Activity Description']} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
+            
+            # Add burst number to the activity description
+            burst_label = f"({burst_counter}) {activity_description}"
+            legend_entries.append(burst_label)
+            
+            # Store activity positions for connection (x and y coordinates)
+            activity_positions.append((x[index], y[index]))
+
+            # Label the burst with a number on the spiral
+            ax.text(x[index], y[index], str(burst_counter), ha='center', va='center', fontsize=14, color='white', weight='bold')
+
+            burst_counter += 1
+
+        else:
+            # Only start the bursts after the first full rotation, or after a certain index
+            if index > 5:  # After the spiral has developed a bit
+                burst_started = True
 
         # Add sparkle trail between activities
         if index < len(df) - 1:
@@ -121,15 +118,18 @@ def draw_timeline(df, activity_colors):
             y_sparkles = np.linspace(y[index], y[index + 1], num_sparkles)
             x_sparkles += np.random.uniform(-0.3, 0.3, size=num_sparkles)
             y_sparkles += np.random.uniform(-0.3, 0.3, size=num_sparkles)
-            sizes = np.random.rand(num_sparkles) * 5  # Match sparkle size
+            sizes = np.random.rand(num_sparkles) * 15
             colors = np.random.rand(num_sparkles)
             ax.scatter(x_sparkles, y_sparkles, s=sizes, c=colors, marker='*', cmap='cividis', alpha=0.9, zorder=1)
 
-        # Add shadow underneath the oval (using a darker shade of the activity color)
-        shadow_color = tuple([c * 0.5 / 255 for c in base_color[:3]]) + (0.588,)  # 150/255 = 0.588
-        ax.add_patch(Ellipse((x[index], y[index]), width=12, height=8, color=shadow_color, alpha=0.5))
+    # Place the legend outside to the side of the spiral without being cut off
+    ax.legend(legend_entries, loc='upper left', bbox_to_anchor=(1.1, 1), fontsize=12, facecolor='black', framealpha=0.5)
 
+    # Save the figure as a PDF
     plt.tight_layout()
+    plt.savefig("timeline_visualization.pdf", format="pdf")
+
+    # Show the plot
     plt.show()
 
 # Draw the timeline
