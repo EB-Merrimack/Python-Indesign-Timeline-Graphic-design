@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
 
 # Load the data from the CSV file
@@ -13,16 +13,17 @@ df = df[df['Day'] == 'Day 1']
 df['Start time'] = pd.to_datetime(df['Start time'], format='%m/%d/%Y %I:%M:%S%p', errors='coerce')
 df['End time'] = pd.to_datetime(df['end time'], format='%m/%d/%Y %I:%M:%S%p', errors='coerce')
 
-# Define colors for different activity types
+# Define colors for different activity types with a rose gold theme
 activity_colors = {
-    "sleep": (0, 0, 255, 255),         # Blue
-    "relaxing": (0, 255, 0, 255),      # Green
-    "travel": (255, 255, 0, 255),      # Yellow
-    "physical-fun": (255, 0, 0, 255),  # Red
-    "mental-fun": (128, 0, 128, 255),  # Purple
-    "eating": (255, 165, 0, 255),      # Orange
-    "gaming": (0, 255, 255, 255)       # Cyan
+    "sleep": (17, 216, 211),        # Teal
+    "relaxing": (255, 182, 193),    # Light Pink Shimmer (for relaxing)
+    "travel": (126, 10, 129),       # Purple (for travel)
+    "physical-fun": (205, 127, 50), # Copper (for physical fun)
+    "mental-fun": (110, 42, 11),    # Maroon (for mental fun)
+    "eating": (255, 160, 122),      # Light Salmon (for eating)
+    "gaming": (0, 191, 255)         # Electric Blue (for gaming)
 }
+
 
 # Function to generate a spiral path with more space between the points
 def generate_spiral_path(num_points, radius):
@@ -32,16 +33,31 @@ def generate_spiral_path(num_points, radius):
     y = r * np.sin(theta)  # Y coordinate
     return x, y
 
-# Function to create a mini star icon
-def create_mini_star(color, size=10):
-    img = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+# Function to create a mini star icon with rose gold effect
+def create_mini_star(color, size=10, circle_size=20, line_width=3):
+    img = Image.new('RGBA', (circle_size, circle_size), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
+    
+    # Create a gradient rose gold effect for the circle
+    gradient = Image.new('RGBA', (circle_size, circle_size), (0, 0, 0, 0))
+    gradient_draw = ImageDraw.Draw(gradient)
+    
+    # Draw a radial gradient (simulating a rose gold metallic shine effect)
+    for i in range(circle_size // 2, 0, -1):
+        shade = tuple(int(c * (i / (circle_size // 2))) for c in color)  # Apply gradient effect
+        gradient_draw.ellipse([i, i, circle_size - i, circle_size - i], outline=shade, width=line_width)
+    
+    # Apply the gradient to the circle
+    img.paste(gradient, (0, 0), gradient)
+    
+    # Draw the star in the center with the same rose gold tone
     points = [
-        (size * 0.5, 0), (size * 0.6, size * 0.35), (size, size * 0.35),
-        (size * 0.7, size * 0.6), (size * 0.8, size), (size * 0.5, size * 0.75),
-        (size * 0.2, size), (size * 0.3, size * 0.6), (0, size * 0.35), (size * 0.4, size * 0.35)
+        (circle_size * 0.5, 0), (circle_size * 0.6, circle_size * 0.35), (circle_size, circle_size * 0.35),
+        (circle_size * 0.7, circle_size * 0.6), (circle_size * 0.8, circle_size), (circle_size * 0.5, circle_size * 0.75),
+        (circle_size * 0.2, circle_size), (circle_size * 0.3, circle_size * 0.6), (0, circle_size * 0.35), (circle_size * 0.4, circle_size * 0.35)
     ]
     draw.polygon(points, fill=color)
+    
     return img
 
 # Function to draw the timeline
@@ -81,9 +97,9 @@ def draw_timeline(df, activity_colors):
         color = activity_colors.get(activity_type, (255, 255, 255, 255))
 
         if burst_started:
-            # Draw mini stars along the spiral outline
-            mini_star_icon = create_mini_star(color, size=12)
-            num_mini_stars = 12  # Number of mini stars around the outline
+            # Draw mini stars along the spiral outline with rose gold effect
+            mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
+            num_mini_stars = 150  # Number of mini stars around the outline
             angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
             for i in range(num_mini_stars):
                 # Create circular positions for mini stars around the main position
