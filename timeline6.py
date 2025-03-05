@@ -24,7 +24,6 @@ activity_colors = {
     "gaming": (0, 191, 255)         # Electric Blue (for gaming)
 }
 
-
 # Function to generate a spiral path with more space between the points
 def generate_spiral_path(num_points, radius):
     theta = np.linspace(0, 6 * np.pi, num_points)  # More rotations for a larger spiral
@@ -61,6 +60,7 @@ def create_mini_star(color, size=10, circle_size=20, line_width=3):
     return img
 
 # Function to draw the timeline
+# Function to draw the timeline with multiple stars for multiple activity types
 def draw_timeline(df, activity_colors):
     fig, ax = plt.subplots(figsize=(36, 24))  # Set the figure size to 36 by 24
     ax.set_xlim(-50, 50)
@@ -93,22 +93,29 @@ def draw_timeline(df, activity_colors):
 
     for index, row in df.iterrows():
         start_time, end_time = row['Start time'], row['End time']
-        activity_type = row['Activity Type'].split(', ')[0]
-        color = activity_colors.get(activity_type, (255, 255, 255, 255))
+        activity_types = row['Activity Type'].split(', ')  # Handle multiple activity types
+        color = activity_colors.get(activity_types[0], (255, 255, 255, 255))
 
         if burst_started:
-            # Draw mini stars along the spiral outline with rose gold effect
-            mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
-            num_mini_stars = 150  # Number of mini stars around the outline
-            angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
-            for i in range(num_mini_stars):
-                # Create circular positions for mini stars around the main position
-                x_pos = x[index] + 2 * np.cos(angle[i])
-                y_pos = y[index] + 2 * np.sin(angle[i])
-                ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto')
+            # For multiple activity types, draw multiple mini stars
+            num_stars = len(activity_types)
+            for i in range(num_stars):
+                # Pick a color based on the activity type
+                color = activity_colors.get(activity_types[i], (255, 255, 255, 255))
+                mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
+                
+                # Offset the stars so they don't overlap
+                x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
+                num_mini_stars = 150  # Number of mini stars around the outline
+                angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
+                for j in range(num_mini_stars):
+                    # Create circular positions for mini stars around the main position
+                    x_pos = x[index] + x_offset + 2 * np.cos(angle[j])
+                    y_pos = y[index] + 2 * np.sin(angle[j])
+                    ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto')
 
             # Add text with activity description and time range
-            activity_description = f"{row['Activity Description']} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
+            activity_description = f"{', '.join(activity_types)} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
             
             # Add burst number to the activity description
             burst_label = f"({burst_counter}) {activity_description}"
@@ -150,3 +157,4 @@ def draw_timeline(df, activity_colors):
 
 # Draw the timeline
 draw_timeline(df, activity_colors)
+
