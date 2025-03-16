@@ -15,10 +15,8 @@ df['End time'] = pd.to_datetime(df['end time'], format='%m/%d/%Y %I:%M:%S%p', er
 
 # Define colors for different activity types with a rose gold theme
 activity_colors = {
-    "sleep": (17, 216, 211),        # Teal
     "relaxing": (255, 182, 193),    # Light Pink Shimmer (for relaxing)
     "travel": (126, 10, 129),       # Purple (for travel)
-    "physical-fun": (205, 127, 50), # Copper (for physical fun)
     "mental-fun": (110, 42, 11),    # Maroon (for mental fun)
     "eating": (255, 160, 122),      # Light Salmon (for eating)
     "gaming": (0, 191, 255)         # Electric Blue (for gaming)
@@ -68,6 +66,12 @@ def create_sleep_icon( ):
     # Return the image without resizing
     return img
 
+# Function to create a physical fun icon (use the original image, e.g., sleep.png)
+def create_physical_fun_icon( ):
+    img = Image.open("icons/female_mouse_physical.png")
+    
+    # Return the image without resizing
+    return img
 
 
 # Function to draw the timeline with heart-shaped background
@@ -142,6 +146,12 @@ def draw_timeline(df, activity_colors):
                     sleep_icon = create_sleep_icon()  # Sleep icon for sleeping activity
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the icons apart
                     ax.imshow(sleep_icon, extent=[x[index] + x_offset - 2, x[index] + x_offset + 2, y[index] - 2, y[index] + 2], aspect='auto')
+                
+                elif activity_types[i] == "physical-fun":
+                    physical_activity_icon = create_physical_fun_icon()  # Physical activity icon for physical activity
+                    x_offset = (i - (num_stars // 2)) * 2  # Spread the icons apart
+                    ax.imshow(physical_activity_icon, extent=[x[index] + x_offset - 2, x[index] + x_offset + 2, y[index] - 2, y[index] + 2], aspect='auto')
+                    
                 else:
                     mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
