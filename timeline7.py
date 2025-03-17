@@ -1,6 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFilter
+from matplotlib.patches import Polygon
+import textwrap
+
 import numpy as np
 
 # Load the data from the CSV file
@@ -32,6 +35,7 @@ def generate_spiral_path(num_points, radius):
 
 # Function to create a mini star icon with rose gold effect
 def create_mini_star(color, size=10, circle_size=20, line_width=3):
+    
     img = Image.new('RGBA', (circle_size, circle_size), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
     
@@ -57,6 +61,18 @@ def create_mini_star(color, size=10, circle_size=20, line_width=3):
     
     return img
 
+# Function to create a 5-point burst star
+def create_star(center_x, center_y, size, color='gold'):
+    angles = np.linspace(0, 2 * np.pi, 11)  # 10 points + closing point
+    radius_outer = size
+    radius_inner = size / 2.5
+
+    star_points = []
+    for i, angle in enumerate(angles[:-1]):  # Skip last point to avoid duplication
+        radius = radius_outer if i % 2 == 0 else radius_inner
+        star_points.append((center_x + radius * np.cos(angle), center_y + radius * np.sin(angle)))
+
+    return Polygon(star_points, closed=True, facecolor=color, edgecolor='black', lw=1.5, zorder=3)
 
 # Function to create a sleep icon (e.g., a moon)# Function to create a sleep icon (use an existing image, e.g., sleep.png)
 # Function to create a sleep icon (use the original image, e.g., sleep.png)
@@ -149,9 +165,17 @@ def draw_timeline(df, activity_colors):
                 
                 elif activity_types[i] == "physical-fun":
                     physical_activity_icon = create_physical_fun_icon()  # Physical activity icon for physical activity
-                    x_offset = (i - (num_stars // 2)) * 2  # Spread the icons apart
-                    ax.imshow(physical_activity_icon, extent=[x[index] + x_offset - 2, x[index] + x_offset + 2, y[index] - 2, y[index] + 2], aspect='auto')
                     
+                    # Offset for positioning (right of the number label)
+                    x_offset = (i - (num_stars // 2)) * 2 + 5  # Move further right
+                    y_offset = -2  # Slight downward shift for better positioning
+                    
+                    # Plot the stars first, then overlay the physical activity icon
+                    ax.imshow(physical_activity_icon, extent=[x[index] + x_offset - 2, 
+                                                            x[index] + x_offset + 2, 
+                                                            y[index] + y_offset - 2, 
+                                                            y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
+
                 else:
                     mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
@@ -173,10 +197,29 @@ def draw_timeline(df, activity_colors):
             # Store activity positions for connection (x and y coordinates)
             activity_positions.append((x[index], y[index]))
 
-            # Label the burst with a number on the spiral
-            ax.text(x[index], y[index], str(burst_counter), ha='center', va='center', fontsize=14, color='white', weight='bold')
+        
+           
+            # Function to wrap text to fit within the star
+            def wrap_text(text, width=10):
+                return textwrap.fill(text, width=width)
+
+            # Create the burst star (adjusted position)
+            burst_star = create_star(x[index], y[index] - 3, size=5)  # Decreased size and adjusted position
+            burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
+            ax.add_patch(burst_star)
+
+            # Wrap the activity description text to fit within the star
+            activity_description = row['Activity Description']
+            wrapped_description = wrap_text(activity_description)
+
+            # Display the wrapped text
+            ax.text(x[index], y[index] - 3, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
 
             burst_counter += 1
+
+
+
+
 
         else:
             # Only start the bursts after the first full rotation, or after a certain index
