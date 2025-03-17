@@ -21,6 +21,7 @@ activity_colors = {
     "relaxing": (255, 182, 193),    # Light Pink Shimmer (for relaxing)
     "travel": (126, 10, 129),       # Purple (for travel)
     "mental-fun": (110, 42, 11),    # Maroon (for mental fun)
+    "physical-fun": (110, 42, 11), # use the same for both fun icons
     "eating": (255, 160, 122),      # Light Salmon (for eating)
     "gaming": (0, 191, 255)         # Electric Blue (for gaming)
 }
@@ -86,8 +87,19 @@ def create_sleep_icon( ):
     # Return the image without resizing
     return img
 
+#Function to create carriage icon
+def create_carriage():
+    img = Image.open("icons/carriage.png")
+    return img
+ #function to create slipper / walking icon
+ 
+def create_slipper():
+     img = Image.open("icons/glassslipper_walking.png")
+     return img
+
 # Function to create a physical fun icon (use the original image, e.g., sleep.png)
 def create_physical_fun_icon( ):
+    
     img = Image.open("icons/female_mouse_physical.png")
     
     # Return the image without resizing
@@ -157,45 +169,60 @@ def draw_timeline(df, activity_colors):
         color = activity_colors.get(activity_types[0], (255, 255, 255, 255))
 
         if burst_started:
-            # For multiple activity types, draw multiple mini stars or icons
             num_stars = len(activity_types)
+            
             for i in range(num_stars):
-                # Pick a color based on the activity type
                 color = activity_colors.get(activity_types[i], (255, 255, 255, 255))
                 
                 if activity_types[i] == "sleep":
-                    sleep_icon = create_sleep_icon()  # Sleep icon for sleeping activity
-                    x_offset = (i - (num_stars // 2)) * 2  # Spread the icons apart
+                    sleep_icon = create_sleep_icon()
+                    x_offset = (i - (num_stars // 2)) * 2
                     ax.imshow(sleep_icon, extent=[x[index] + x_offset - 2, x[index] + x_offset + 2, y[index] - 2, y[index] + 2], aspect='auto')
-                
-                elif activity_types[i] == "physical-fun":
-                    physical_activity_icon = create_physical_fun_icon()  # Physical activity icon for physical activity
-                    
-                    # Offset for positioning (right of the number label)
-                    x_offset = (i - (num_stars // 2)) * 2 + 5  # Move further right
-                    y_offset = -2  # Slight downward shift for better positioning
-                    
-                    # Plot the stars first, then overlay the physical activity icon
-                    ax.imshow(physical_activity_icon, extent=[x[index] + x_offset - 2, 
-                                                            x[index] + x_offset + 2, 
-                                                            y[index] + y_offset - 2, 
-                                                            y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
 
-                else:
+                elif activity_types[i] == "travel":
+                    activity_description = row['Activity Description'].lower()
+
+                    # Create burst star for travel activities
+                    travel_star = create_star(x[index], y[index] - 4, size=5)
+                    travel_star.set_zorder(0)  # Place behind other elements
+                    ax.add_patch(travel_star)
+
+                    # Choose travel icon
+                    if "car ride" in activity_description:
+                        travel_icon = create_carriage()
+                    else:
+                        travel_icon = create_slipper()
+
+                    # Place travel icon inside the burst star
+                    ax.imshow(travel_icon, extent=[x[index] - 1.2, x[index] + 1.2, y[index] - 4.5, y[index] - 2.5], aspect='auto', zorder=1)
+
+                elif activity_types[i] in ["physical-fun", "mental-fun"]:
+                    # Determine fun icon
+                    if activity_types[i] == "physical-fun":
+                        fun_icon = create_physical_fun_icon()
+                    else:
+                        fun_icon = create_mental_fun_icon()
+
+                    # Place fun icon at the same y-offset where bursts were
+                    ax.imshow(fun_icon, extent=[x[index] - 1.5, x[index] + 1.5, y[index] - 4.5, y[index] - 2.5], aspect='auto', zorder=1)
+
+                    
+           
+            # Check if the activity type has a corresponding color before creating mini stars
+                if activity_types[i] in activity_colors:
                     mini_star_icon = create_mini_star(color, size=2, circle_size=50, line_width=5)
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
                     num_mini_stars = 150  # Number of mini stars around the outline
                     angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
                     
                     for j in range(num_mini_stars):
-                        # Calculate positions for mini stars around the burst star's position (centered around x[index], y[index])
-                        radius = 4  # Radius around the burst star
+                        # Calculate positions for mini stars around the burst star's position
+                        radius = 5  # Radius around the burst star
                         x_pos = x[index] + radius * np.cos(angle[j]) + x_offset
-                        y_pos = y[index]-5 + radius * np.sin(angle[j]) + 2  # Adjust vertical offset as needed
+                        y_pos = y[index] - 5 + radius * np.sin(angle[j]) + 2  # Adjust vertical offset as needed
                         
                         # Place the mini stars around the burst star
                         ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto', zorder=-1)
-
             # Add text with activity description and time range
             activity_description = f"{', '.join(activity_types)} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
             
@@ -211,19 +238,27 @@ def draw_timeline(df, activity_colors):
             def wrap_text(text, width=10):
                 return textwrap.fill(text, width=width)
 
-            # Create the burst star (adjusted position)
-            burst_star = create_star(x[index], y[index] - 4, size=5)  # Decreased size and adjusted position
-            burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
-            ax.add_patch(burst_star)
-
-            # Wrap the activity description text to fit within the star
+            # Loop through your dataset and process each activity
             activity_description = row['Activity Description']
-            wrapped_description = wrap_text(activity_description)
 
-            # Display the wrapped text
-            ax.text(x[index], y[index] - 4, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
+            # Check if the activity description contains "sleep" or "car ride"
+            if "sleep" not in activity_description.lower() and "car ride" not in activity_description.lower() and "walking" not in activity_description.lower():
+                # Create the burst star (adjusted position) for activities that aren't "sleep" or "car ride"
+                burst_star = create_star(x[index], y[index] - 4, size=6)  # Decreased size and adjusted position
+                burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
+                ax.add_patch(burst_star)
 
-            burst_counter += 1
+                # Wrap the activity description text to fit within the star
+                wrapped_description = wrap_text(activity_description)
+
+                # Display the wrapped text
+                ax.text(x[index], y[index] - 4, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
+
+                burst_counter += 1
+            else:
+                # For "sleep" or "car ride", still count the spot in the spiral but don't create the burst star or display the text
+                burst_counter += 1
+
 
         else:
             # Only start the bursts after the first full rotation, or after a certain index
