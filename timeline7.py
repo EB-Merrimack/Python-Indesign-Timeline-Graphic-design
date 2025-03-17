@@ -103,20 +103,22 @@ def draw_timeline(df, activity_colors):
     # Generate a larger spiral path with more space between activities
     x, y = generate_spiral_path(len(df), 30)
 
-    # Add the magic wand at the start (optional, replace the path if you don't want it)
     try:
         magic_wand = Image.open("icons/bigger_wand.png")
-        
-        # Resize the image (adjust the size to make the wand bigger)
-        new_width = 300  # Increase the width to make it larger
-        new_height = 300  # Increase the height to make it larger
+
+        # Resize the image (increase the width and height to make it larger)
+        new_width = 500  # Increase the width to make it larger
+        new_height = 500  # Increase the height to make it larger
         resized_wand = magic_wand.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
+
         # Rotate the resized image if necessary
-        rotated_wand = resized_wand.rotate(45, expand=True)
+        rotated_wand = resized_wand.rotate(80, expand=True)
+
+        # Adjust the x and y-axis extents to move the image
+        x_offset = 5  # Adjust this value to move the image left or right
+        y_offset = 4  # Adjust this value to move the image up or down
         
-        # Display the rotated image with a larger extent (adjust extent as needed)
-        ax.imshow(rotated_wand, extent=[x[0] - 2, x[0] + 5, y[0] - 10, y[0] + 5], aspect='auto')
+        ax.imshow(rotated_wand, extent=[x[0] - 10 + x_offset, x[0] + 10 + x_offset, y[0] - 20 + y_offset, y[0] + 20 + y_offset], aspect='auto')
 
         # Generate a small burst of stars around the wand
         num_stars_burst = 50  # Number of stars in the burst
