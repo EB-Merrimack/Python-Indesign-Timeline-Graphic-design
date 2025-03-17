@@ -90,7 +90,6 @@ def create_physical_fun_icon( ):
     return img
 
 
-# Function to draw the timeline with heart-shaped background
 def draw_timeline(df, activity_colors):
     fig, ax = plt.subplots(figsize=(36, 24))  # Set the figure size to 36 by 24
     ax.set_xlim(-50, 50)
@@ -177,15 +176,19 @@ def draw_timeline(df, activity_colors):
                                                             y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
 
                 else:
-                    mini_star_icon = create_mini_star(color, size=1, circle_size=30, line_width=5)
+                    mini_star_icon = create_mini_star(color, size=2, circle_size=50, line_width=5)
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
                     num_mini_stars = 150  # Number of mini stars around the outline
                     angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
+                    
                     for j in range(num_mini_stars):
-                        # Create circular positions for mini stars around the main position
-                        x_pos = x[index] + x_offset + 2 * np.cos(angle[j])
-                        y_pos = y[index] + 2 * np.sin(angle[j])
-                        ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto')
+                        # Calculate positions for mini stars around the burst star's position (centered around x[index], y[index])
+                        radius = 4  # Radius around the burst star
+                        x_pos = x[index] + radius * np.cos(angle[j]) + x_offset
+                        y_pos = y[index]-5 + radius * np.sin(angle[j]) + 2  # Adjust vertical offset as needed
+                        
+                        # Place the mini stars around the burst star
+                        ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto', zorder=-1)
 
             # Add text with activity description and time range
             activity_description = f"{', '.join(activity_types)} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
@@ -198,13 +201,12 @@ def draw_timeline(df, activity_colors):
             activity_positions.append((x[index], y[index]))
 
         
-           
             # Function to wrap text to fit within the star
             def wrap_text(text, width=10):
                 return textwrap.fill(text, width=width)
 
             # Create the burst star (adjusted position)
-            burst_star = create_star(x[index], y[index] - 3, size=5)  # Decreased size and adjusted position
+            burst_star = create_star(x[index], y[index] - 4, size=5)  # Decreased size and adjusted position
             burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
             ax.add_patch(burst_star)
 
@@ -213,13 +215,9 @@ def draw_timeline(df, activity_colors):
             wrapped_description = wrap_text(activity_description)
 
             # Display the wrapped text
-            ax.text(x[index], y[index] - 3, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
+            ax.text(x[index], y[index] - 4, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
 
             burst_counter += 1
-
-
-
-
 
         else:
             # Only start the bursts after the first full rotation, or after a certain index
@@ -235,7 +233,7 @@ def draw_timeline(df, activity_colors):
             y_sparkles += np.random.uniform(-0.3, 0.3, size=num_sparkles)
             sizes = np.random.rand(num_sparkles) * 15
             colors = np.random.rand(num_sparkles)
-            ax.scatter(x_sparkles, y_sparkles, s=sizes, c=colors, marker='*', cmap='cividis', alpha=0.9, zorder=1)
+            ax.scatter(x_sparkles, y_sparkles, s=sizes, c=colors, marker='*', cmap='cividis', alpha=0.9, zorder=-1)
 
     # Place the legend outside to the side of the spiral without being cut off
     ax.legend(legend_entries, loc='upper left', bbox_to_anchor=(1.1, 1), fontsize=12, facecolor='black', framealpha=0.5)
