@@ -2,6 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFilter
 from matplotlib.patches import Polygon
+import matplotlib.patches as patches
+import matplotlib.image as mpimg
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import textwrap
 
 import numpy as np
@@ -23,7 +26,6 @@ activity_colors = {
     "mental-fun": (110, 42, 11),    # Maroon (for mental fun)
     "physical-fun": (110, 42, 11), # use the same for both fun icons
     "eating": (255, 160, 122),      # Light Salmon (for eating)
-    "gaming": (0, 191, 255)         # Electric Blue (for gaming)
 }
 
 # Function to generate a spiral path with more space between the points
@@ -32,10 +34,15 @@ def generate_spiral_path(num_points, radius):
     theta = np.linspace(0, 6 * np.pi, num_points)  # More rotations for a larger spiral
     
     # Adjusting the radial distance to increase the space between spirals
-    r = np.linspace(0, radius, num_points) ** 1.1 
+    r = np.linspace(0, radius, num_points) ** 1.1  # Modified for better spacing
     x = r * np.cos(theta)  # X coordinate
     y = r * np.sin(theta)  # Y coordinate
-    return x, y
+
+    # Re-centering the spiral by shifting it to the middle of the plot
+    x_centered = x - x.min()-40   # Shift by the minimum value, then offset to add padding
+    y_centered = y - y.min()-30  # Same for y-coordinates
+
+    return x_centered, y_centered
 
 
 # Function to create a mini star icon with rose gold effect
@@ -104,16 +111,47 @@ def create_physical_fun_icon( ):
     
     # Return the image without resizing
     return img
+# Function to create a silver star (same as the golden star but with a silver color)
+def create_silver_star(center_x, center_y, size, color='silver'):
+    return create_star(center_x, center_y, size, color)
 
+# Function to add energy level-based stars in the timeline
+def add_energy_stars(ax, x, y, energy_level, index):
+    """
+    Replaces energy stars with a silver star containing up to 3 hearts.
+    :param ax: Matplotlib axis
+    :param x, y: Position
+    :param energy_level: 'high', 'medium', 'low'
+    :param index: Index in timeline
+    :param heart_img_path: Path to heart image
+    """
+    
+    # Silver star to hold hearts
+    silver_star = create_silver_star(x - 3, y + 2, size=5, color='silver')
+    silver_star.set_zorder(0)
+    ax.add_patch(silver_star)
+
+    # Load heart image
+    heart_img = mpimg.imread('icons/heart.png')
+    heart_icon = OffsetImage(heart_img, zoom=.5)  # Adjust zoom as needed
+
+    # Determine number of hearts based on energy level
+    num_hearts = {"high": 3, "medium": 2, "low": 1}[energy_level]
+
+    # Place hearts inside the silver star
+    for i in range(num_hearts):
+        offset_x = x - 3 + (i - (num_hearts - 1) / 2) * 1.5  # Space hearts evenly
+        heart_box = AnnotationBbox(heart_icon, (offset_x, y +2), frameon=False)
+        ax.add_artist(heart_box)
 
 def draw_timeline(df, activity_colors):
-    fig, ax = plt.subplots(figsize=(36, 24))  # Set the figure size to 36 by 24
-    ax.set_xlim(-50, 50)
-    ax.set_ylim(-50, 50)
+    fig, ax = plt.subplots(figsize=(72,48))  # Set the figure size to 36 by 24
+    ax.set_xlim(-50, 100)
+    ax.set_ylim(-50,100)
     ax.axis('off')
 
     # Generate a larger spiral path with more space between activities
-    x, y = generate_spiral_path(len(df), 30)
+    x, y = generate_spiral_path(len(df), 50)
 
     try:
         magic_wand = Image.open("icons/bigger_wand.png")
@@ -170,14 +208,21 @@ def draw_timeline(df, activity_colors):
 
         if burst_started:
             num_stars = len(activity_types)
-            
+            energy_level = row['Energy Level']  # Assuming energy level is in the dataset
+
+ 
             for i in range(num_stars):
                 color = activity_colors.get(activity_types[i], (255, 255, 255, 255))
-                
+                   # Now, call the function to add energy level stars
+                add_energy_stars(ax, x[index], y[index], energy_level, index)
                 if activity_types[i] == "sleep":
+                    # Create burst star for travel activities
+                    sleep_star = create_star(x[index]-1, y[index] - 3, size=7)
+                    sleep_star.set_zorder(0)  # Place behind other elements
+                    ax.add_patch(sleep_star)
                     sleep_icon = create_sleep_icon()
                     x_offset = (i - (num_stars // 2)) * 2
-                    ax.imshow(sleep_icon, extent=[x[index] + x_offset - 2, x[index] + x_offset + 2, y[index] - 2, y[index] + 2], aspect='auto')
+                    ax.imshow(sleep_icon, extent=[x[index] + x_offset - 3, x[index] + x_offset + 1, y[index] - 5, y[index] -1], aspect='auto')
 
                 elif activity_types[i] == "travel":
                     activity_description = row['Activity Description'].lower()
@@ -193,21 +238,23 @@ def draw_timeline(df, activity_colors):
                     else:
                         travel_icon = create_slipper()
 
-                    # Place travel icon inside the burst star
-                    ax.imshow(travel_icon, extent=[x[index] - 1.2, x[index] + 1.2, y[index] - 4.5, y[index] - 2.5], aspect='auto', zorder=1)
-
+                    ax.imshow(travel_icon, extent=[x[index] - 1.5, x[index] + 1.5, y[index] - 5, y[index] - 2], aspect='auto', zorder=1)
                 elif activity_types[i] in ["physical-fun", "mental-fun"]:
                     # Determine fun icon
                     if activity_types[i] == "physical-fun":
                         fun_icon = create_physical_fun_icon()
                     else:
                         fun_icon = create_mental_fun_icon()
-
-                    # Place fun icon at the same y-offset where bursts were
-                    ax.imshow(fun_icon, extent=[x[index] - 1.5, x[index] + 1.5, y[index] - 4.5, y[index] - 2.5], aspect='auto', zorder=1)
-
+                    x_offset = (i - (num_stars // 2)) * 2 +6  # Move further right
+                    y_offset = -4.5  # Slight downward shift for better positioning
                     
-           
+                    # Plot the stars first, then overlay the physical activity icon
+                    ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
+                                                            x[index] + x_offset + 2, 
+                                                            y[index] + y_offset - 2, 
+                                                            y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
+
+   
             # Check if the activity type has a corresponding color before creating mini stars
                 if activity_types[i] in activity_colors:
                     mini_star_icon = create_mini_star(color, size=2, circle_size=50, line_width=5)
@@ -244,7 +291,7 @@ def draw_timeline(df, activity_colors):
             # Check if the activity description contains "sleep" or "car ride"
             if "sleep" not in activity_description.lower() and "car ride" not in activity_description.lower() and "walking" not in activity_description.lower():
                 # Create the burst star (adjusted position) for activities that aren't "sleep" or "car ride"
-                burst_star = create_star(x[index], y[index] - 4, size=6)  # Decreased size and adjusted position
+                burst_star = create_star(x[index], y[index] - 4, size=8)  # Decreased size and adjusted position
                 burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
                 ax.add_patch(burst_star)
 
@@ -258,6 +305,8 @@ def draw_timeline(df, activity_colors):
             else:
                 # For "sleep" or "car ride", still count the spot in the spiral but don't create the burst star or display the text
                 burst_counter += 1
+                
+          
 
 
         else:
