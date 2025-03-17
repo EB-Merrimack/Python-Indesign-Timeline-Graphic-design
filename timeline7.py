@@ -26,12 +26,16 @@ activity_colors = {
 }
 
 # Function to generate a spiral path with more space between the points
+# Function to generate a spiral path with more space between the points
 def generate_spiral_path(num_points, radius):
     theta = np.linspace(0, 6 * np.pi, num_points)  # More rotations for a larger spiral
-    r = np.linspace(0, radius, num_points)  # Radial distance increases
+    
+    # Adjusting the radial distance to increase the space between spirals
+    r = np.linspace(0, radius, num_points) ** 1.1 
     x = r * np.cos(theta)  # X coordinate
     y = r * np.sin(theta)  # Y coordinate
     return x, y
+
 
 # Function to create a mini star icon with rose gold effect
 def create_mini_star(color, size=10, circle_size=20, line_width=3):
