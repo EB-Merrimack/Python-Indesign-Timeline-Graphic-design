@@ -1,3 +1,4 @@
+#python script to create a timeline of activitys based on csv
 import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFilter
@@ -21,11 +22,12 @@ df['End time'] = pd.to_datetime(df['end time'], format='%m/%d/%Y %I:%M:%S%p', er
 
 # Define colors for different activity types with a rose gold theme
 activity_colors = {
-    "relaxing": (255, 182, 193),    # Light Pink Shimmer (for relaxing)
-    "travel": (126, 10, 129),       # Purple (for travel)
+    "relaxing": (255, 210, 220),    # Light Pink Shimmer (for relaxing)
+    "travel": (160, 30, 180),       # Purple (for travel)
     "mental-fun": (110, 42, 11),    # Maroon (for mental fun)
     "physical-fun": (110, 42, 11), # use the same for both fun icons
-    "eating": (255, 160, 122),      # Light Salmon (for eating)
+    "eating": (0, 128, 128),      # rich, contrasting teal.
+    "clifton hill":(255, 140, 0) #strong orange
 }
 
 # Function to generate a spiral path with more space between the points
@@ -45,13 +47,12 @@ def generate_spiral_path(num_points, radius):
     return x_centered, y_centered
 
 
-# Function to create a mini star icon with rose gold effect
-def create_mini_star(color, size=10, circle_size=20, line_width=3):
-    
-    img = Image.new('RGBA', (circle_size, circle_size), (255, 255, 255, 0))
+# Function to create a mini shooting star icon with rose gold effect
+def create_mini_star(color, size=10, circle_size=20, line_width=3, tail_length=30):
+    img = Image.new('RGBA', (circle_size + tail_length, circle_size), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
     
-    # Create a gradient rose gold effect for the circle
+    # Create a gradient rose gold effect for the circle (main body of the star)
     gradient = Image.new('RGBA', (circle_size, circle_size), (0, 0, 0, 0))
     gradient_draw = ImageDraw.Draw(gradient)
     
@@ -63,7 +64,7 @@ def create_mini_star(color, size=10, circle_size=20, line_width=3):
     # Apply the gradient to the circle
     img.paste(gradient, (0, 0), gradient)
     
-    # Draw the star in the center with the same rose gold tone
+    # Draw the star (in the shape of a shooting star) in the center with the same rose gold tone
     points = [
         (circle_size * 0.5, 0), (circle_size * 0.6, circle_size * 0.35), (circle_size, circle_size * 0.35),
         (circle_size * 0.7, circle_size * 0.6), (circle_size * 0.8, circle_size), (circle_size * 0.5, circle_size * 0.75),
@@ -71,6 +72,17 @@ def create_mini_star(color, size=10, circle_size=20, line_width=3):
     ]
     draw.polygon(points, fill=color)
     
+    # Add the tail effect (simulating a shooting star)
+    tail_start = (circle_size * 0.9, circle_size * 0.5)  # Position at the right end of the star
+    tail_end = (circle_size + tail_length, circle_size * 0.5)  # Extend the tail to the right
+
+    # Drawing the tail as a gradient (faded effect towards the end)
+    for i in range(tail_length):
+        opacity = int(255 * (1 - (i / tail_length)))  # Fade the tail
+        tail_color = color + (opacity,)  # Adding alpha value for transparency
+        draw.line([tail_start, (circle_size + i, circle_size * 0.5)], fill=tail_color, width=2)
+        tail_start = (circle_size + i, circle_size * 0.5)  # Update the tail start position
+
     return img
 
 # Function to create a 5-point burst star
@@ -104,15 +116,31 @@ def create_slipper():
      img = Image.open("icons/glassslipper_walking.png")
      return img
 
-# Function to create a physical fun icon (use the original image, e.g., sleep.png)
-def create_physical_fun_icon( ):
-    
-    img = Image.open("icons/female_mouse_physical.png")
-    
-    # Return the image without resizing
+def create_gamecontroler():
+    img = Image.open("icons/game controller.png")
     return img
+# Function to create a physical fun icon (use the original image, e.g., sleep.png)
+
+def create_physical_fun_icon():
+    img = Image.open("icons/female_mouse_physical.png")
+    new_size = (int(img.width * 1.5), int(img.height * 1.5))  # Increase size by 50%
+    img = img.resize(new_size, Image.Resampling.LANCZOS)
+    return img
+
+# Function to create a bigger mental fun icon
+def create_mental_fun_icon():
+    img = Image.open("icons/mental_fun.png")
+    new_size = (int(img.width * 1.5), int(img.height * 1.5))  # Increase size by 50%
+    img = img.resize(new_size, Image.Resampling.LANCZOS)
+    return img
+
 # Function to create a silver star (same as the golden star but with a silver color)
 def create_silver_star(center_x, center_y, size, color='silver'):
+    return create_star(center_x, center_y, size, color)
+
+# create blue star
+def create_blue_star(center_x, center_y, size, color='#73a9c2'):
+    
     return create_star(center_x, center_y, size, color)
 
 # Function to add energy level-based stars in the timeline
@@ -143,6 +171,60 @@ def add_energy_stars(ax, x, y, energy_level, index):
         offset_x = x - 3 + (i - (num_hearts - 1) / 2) * 1.5  # Space hearts evenly
         heart_box = AnnotationBbox(heart_icon, (offset_x, y +2), frameon=False)
         ax.add_artist(heart_box)
+def create_who_im_with(who_im_with, x, y):
+    """
+    Creates an image-based icon for companionship and returns an AnnotationBbox.
+
+    :param who_im_with: "alone" or other value representing companionship.
+    :param x, y: Position where the image should be placed.
+    :return: AnnotationBbox containing the image.
+    """
+    # Load the correct image
+    if who_im_with == "Alone":
+        image_path = "icons/cinderella-alone.png"
+    else:
+        image_path = "icons/cinderella-with bf.png"
+
+    # Load and create OffsetImage
+    img = mpimg.imread(image_path)
+    imagebox = OffsetImage(img, zoom=.25)  # Adjust zoom to fit properly
+
+    # Create annotation box to place it on the plot
+    ab = AnnotationBbox(imagebox, (x, y), frameon=False)
+    
+    return ab
+def add_who_im_with(ax, x, y, who_im_with, index):
+    """
+    Adds a blue star containing an image representing companionship.
+
+    :param ax: Matplotlib axis
+    :param x, y: Position
+    :param who_im_with: "alone" or "with bf"
+    :param index: Index in the timeline
+    """
+    # Offset the blue star to be slightly to the upper left of the silver star
+    blue_star_x = x - 5 # Move left
+    blue_star_y = y + 5 # Move up
+
+    # Create a blue star to hold the icon
+    blue_star = create_blue_star(blue_star_x, blue_star_y, size=5)
+    blue_star.set_zorder(-1)  # Background layer
+    ax.add_patch(blue_star)
+
+    # Get the "who I'm with" image as an AnnotationBbox
+    ab = create_who_im_with(who_im_with, blue_star_x, blue_star_y)
+    ax.add_artist(ab)  # Add the image annotation to the axis
+    
+    
+def add_starttime(ax, x, y, start_time, index):
+    burst_star = create_star(x, y - 10, size=8)  # Decreased size and adjusted position
+    burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
+    ax.add_patch(burst_star)
+
+    # Add the text with the start time inside the burst star
+    ax.text(x-1, y - 11, start_time.strftime("%I:%M %p"), ha='center', va='center', fontweight='bold', fontsize=6, color='black')
+
+
 
 def draw_timeline(df, activity_colors):
     fig, ax = plt.subplots(figsize=(72,48))  # Set the figure size to 36 by 24
@@ -189,8 +271,7 @@ def draw_timeline(df, activity_colors):
     except FileNotFoundError:
         print("Magic wand image not found!")
 
-    # Create a list to store legend entries with burst numbers
-    legend_entries = []
+  
 
     # For storing the connection between bursts and text
     activity_positions = []
@@ -209,12 +290,17 @@ def draw_timeline(df, activity_colors):
         if burst_started:
             num_stars = len(activity_types)
             energy_level = row['Energy Level']  # Assuming energy level is in the dataset
-
+            who_im_with = row['Who Im with']
  
             for i in range(num_stars):
                 color = activity_colors.get(activity_types[i], (255, 255, 255, 255))
                    # Now, call the function to add energy level stars
                 add_energy_stars(ax, x[index], y[index], energy_level, index)
+                # call who im with
+                add_who_im_with(ax, x[index], y[index],who_im_with, index)
+                 # Draw the burst gold star (yellow with an orange outline)
+                add_starttime(ax, x[index], y[index], start_time, index)
+                
                 if activity_types[i] == "sleep":
                     # Create burst star for travel activities
                     sleep_star = create_star(x[index]-1, y[index] - 3, size=7)
@@ -239,25 +325,44 @@ def draw_timeline(df, activity_colors):
                         travel_icon = create_slipper()
 
                     ax.imshow(travel_icon, extent=[x[index] - 1.5, x[index] + 1.5, y[index] - 5, y[index] - 2], aspect='auto', zorder=1)
-                elif activity_types[i] in ["physical-fun", "mental-fun"]:
-                    # Determine fun icon
-                    if activity_types[i] == "physical-fun":
+                elif activity_types[i] in ["physical-fun"]:
+                  
                         fun_icon = create_physical_fun_icon()
-                    else:
-                        fun_icon = create_mental_fun_icon()
-                    x_offset = (i - (num_stars // 2)) * 2 +6  # Move further right
-                    y_offset = -4.5  # Slight downward shift for better positioning
+                        x_offset = (i - (num_stars // 2)) * 2-4   # Move further left
+                        y_offset = -6  # Slight downward shift for better positioning
                     
                     # Plot the stars first, then overlay the physical activity icon
-                    ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
+                        ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
                                                             x[index] + x_offset + 2, 
                                                             y[index] + y_offset - 2, 
                                                             y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
 
-   
+                elif activity_types[i] in ["mental- fun"]:
+                    
+                        fun_icon = create_mental_fun_icon()
+                        x_offset = (i - (num_stars // 2)) * 2 +6  # Move further right
+                        y_offset = -4.5  # Slight downward shift for better positioning
+                    
+                    # Plot the stars first, then overlay the physical activity icon
+                        ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
+                                                            x[index] + x_offset + 2, 
+                                                            y[index] + y_offset - 2, 
+                                                            y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
+
+                elif activity_types[i] in ["gaming"]:
+                        fun_icon = create_gamecontroler()
+                        x_offset = (i - (num_stars // 2)) * 2  # Move further left
+                        y_offset = - 15 # Slight downward shift for better positioning
+                    
+                    # Plot the stars first, then overlay the physical activity icon
+                        ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
+                                                            x[index] + x_offset + 2, 
+                                                            y[index] + y_offset - 2, 
+                                                            y[index] + y_offset + 2], aspect='auto', zorder=3)  # Ensure it's on top
+                        
             # Check if the activity type has a corresponding color before creating mini stars
                 if activity_types[i] in activity_colors:
-                    mini_star_icon = create_mini_star(color, size=2, circle_size=50, line_width=5)
+                    mini_star_icon = create_mini_star(color, size=2, circle_size=60, line_width=5)
                     x_offset = (i - (num_stars // 2)) * 2  # Spread the stars apart
                     num_mini_stars = 150  # Number of mini stars around the outline
                     angle = np.linspace(0, 2 * np.pi, num_mini_stars, endpoint=False)  # Full circle
@@ -273,9 +378,7 @@ def draw_timeline(df, activity_colors):
             # Add text with activity description and time range
             activity_description = f"{', '.join(activity_types)} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
             
-            # Add burst number to the activity description
-            burst_label = f"({burst_counter}) {activity_description}"
-            legend_entries.append(burst_label)
+          
             
             # Store activity positions for connection (x and y coordinates)
             activity_positions.append((x[index], y[index]))
@@ -325,14 +428,12 @@ def draw_timeline(df, activity_colors):
             colors = np.random.rand(num_sparkles)
             ax.scatter(x_sparkles, y_sparkles, s=sizes, c=colors, marker='*', cmap='cividis', alpha=0.9, zorder=-1)
 
-    # Place the legend outside to the side of the spiral without being cut off
-    ax.legend(legend_entries, loc='upper left', bbox_to_anchor=(1.1, 1), fontsize=12, facecolor='black', framealpha=0.5)
 
-    # Save the figure as a PDF
-    plt.tight_layout()
-    plt.savefig("timeline_visualization.pdf", format="pdf")
+ 
 
-    # Show the plot
+   # Save the plot as a high-definition PNG with a transparent background
+    plt.savefig("timeline_visualization.png", format="png", dpi=300, transparent=True)
+        # Show the plot
     plt.show()
 
 # Draw the timeline
