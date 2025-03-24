@@ -48,7 +48,7 @@ def generate_spiral_path(num_points, radius):
 
 
 # Function to create a mini shooting star icon with rose gold effect
-def create_mini_star(color, size=10, circle_size=20, line_width=3, tail_length=30):
+def create_mini_star(color, size=15, circle_size=200, line_width=3, tail_length=30):
     img = Image.new('RGBA', (circle_size + tail_length, circle_size), (255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
     
@@ -355,7 +355,7 @@ def draw_timeline(df, activity_colors):
                     
                     for j in range(num_mini_stars):
                         # Calculate positions for mini stars around the burst star's position
-                        radius = 5  # Radius around the burst star
+                        radius = 10  # Radius around the burst star
                         x_pos = x[index] + radius * np.cos(angle[j]) + x_offset
                         y_pos = y[index] - 5 + radius * np.sin(angle[j]) + 2  # Adjust vertical offset as needed
                         
