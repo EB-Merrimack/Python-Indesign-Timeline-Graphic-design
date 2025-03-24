@@ -106,15 +106,15 @@ def create_sleep_icon( ):
     # Return the image without resizing
     return img
 
-#Function to create carriage icon
+# Function to create and resize carriage icon
 def create_carriage():
     img = Image.open("icons/carriage.png")
     return img
- #function to create slipper / walking icon
- 
+
+# Function to create and resize slipper/walking icon
 def create_slipper():
-     img = Image.open("icons/glassslipper_walking.png")
-     return img
+    img = Image.open("icons/glassslipper_walking.png")
+    return img
 
 def create_gamecontroler():
     img = Image.open("icons/game controller.png")
@@ -217,18 +217,18 @@ def add_who_im_with(ax, x, y, who_im_with, index):
     
     
 def add_starttime(ax, x, y, start_time, index):
-    burst_star = create_star(x, y - 10, size=8)  # Decreased size and adjusted position
+    burst_star = create_star(x, y - 15, size=9)  # Decreased size and adjusted position
     burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
     ax.add_patch(burst_star)
 
     # Add the text with the start time inside the burst star
-    ax.text(x-1, y - 11, start_time.strftime("%I:%M %p"), ha='center', va='center', fontweight='bold', fontsize=6, color='black')
+    ax.text(x, y - 15.5, start_time.strftime("%I:%M %p"), ha='center', va='center', fontweight='bold', fontsize=6, color='black')
 
 
 
 def draw_timeline(df, activity_colors):
-    fig, ax = plt.subplots(figsize=(72,48))  # Set the figure size to 36 by 24
-    ax.set_xlim(-50, 100)
+    fig, ax = plt.subplots(figsize=(72,72))  # Set the figure size to 36 by 24
+    ax.set_xlim(-50, 150)
     ax.set_ylim(-50,100)
     ax.axis('off')
 
@@ -236,7 +236,7 @@ def draw_timeline(df, activity_colors):
     x, y = generate_spiral_path(len(df), 50)
 
     try:
-        magic_wand = Image.open("icons/bigger_wand.png")
+        magic_wand = Image.open("icons/bigger_wand_withstart.png")
 
         # Resize the image (increase the width and height to make it larger)
         new_width = 500  # Increase the width to make it larger
@@ -244,30 +244,16 @@ def draw_timeline(df, activity_colors):
         resized_wand = magic_wand.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         # Rotate the resized image if necessary
-        rotated_wand = resized_wand.rotate(80, expand=True)
+        rotated_wand = resized_wand.rotate(0, expand=True)
 
         # Adjust the x and y-axis extents to move the image
         x_offset = 5  # Adjust this value to move the image left or right
-        y_offset = 4  # Adjust this value to move the image up or down
+        y_offset = 0  # Adjust this value to move the image up or down
         
         ax.imshow(rotated_wand, extent=[x[0] - 10 + x_offset, x[0] + 10 + x_offset, y[0] - 20 + y_offset, y[0] + 20 + y_offset], aspect='auto')
 
-        # Generate a small burst of stars around the wand
-        num_stars_burst = 50  # Number of stars in the burst
-        mini_star_icon = create_mini_star((255, 215, 0), size=1, circle_size=30, line_width=5)  # Gold color for burst
-
-        # Use the same size logic for the burst stars
-        sizes_burst = np.random.rand(num_stars_burst) * 15  # Match the size range of the path stars
-
-        angle_burst = np.linspace(0, 2 * np.pi, num_stars_burst, endpoint=False)
-        for j in range(num_stars_burst):
-            # Randomize the positions for the burst effect
-            x_pos = x[0] + 3 * np.cos(angle_burst[j]) + np.random.uniform(-1, 1)
-            y_pos = y[0] + 3 * np.sin(angle_burst[j]) + np.random.uniform(-1, 1)
-
-            # Draw the burst stars with randomized sizes
-            ax.scatter(x_pos, y_pos, s=sizes_burst[j], c='gold', marker='*', alpha=0.9, zorder=1)
-
+        
+      
     except FileNotFoundError:
         print("Magic wand image not found!")
 
@@ -314,7 +300,7 @@ def draw_timeline(df, activity_colors):
                     activity_description = row['Activity Description'].lower()
 
                     # Create burst star for travel activities
-                    travel_star = create_star(x[index], y[index] - 4, size=5)
+                    travel_star = create_star(x[index], y[index] - 4, size=7)
                     travel_star.set_zorder(0)  # Place behind other elements
                     ax.add_patch(travel_star)
 
@@ -329,7 +315,7 @@ def draw_timeline(df, activity_colors):
                   
                         fun_icon = create_physical_fun_icon()
                         x_offset = (i - (num_stars // 2)) * 2-4   # Move further left
-                        y_offset = -6  # Slight downward shift for better positioning
+                        y_offset = -8  # Slight downward shift for better positioning
                     
                     # Plot the stars first, then overlay the physical activity icon
                         ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
@@ -340,7 +326,7 @@ def draw_timeline(df, activity_colors):
                 elif activity_types[i] in ["mental- fun"]:
                     
                         fun_icon = create_mental_fun_icon()
-                        x_offset = (i - (num_stars // 2)) * 2 +6  # Move further right
+                        x_offset = (i - (num_stars // 2)) * 2 +8  # Move further right
                         y_offset = -4.5  # Slight downward shift for better positioning
                     
                     # Plot the stars first, then overlay the physical activity icon
@@ -351,8 +337,8 @@ def draw_timeline(df, activity_colors):
 
                 elif activity_types[i] in ["gaming"]:
                         fun_icon = create_gamecontroler()
-                        x_offset = (i - (num_stars // 2)) * 2  # Move further left
-                        y_offset = - 15 # Slight downward shift for better positioning
+                        x_offset = (i - (num_stars // 2)) * 2.3  # Move further left
+                        y_offset = - 10 # Slight downward shift for better positioning
                     
                     # Plot the stars first, then overlay the physical activity icon
                         ax.imshow(fun_icon, extent=[x[index] + x_offset - 2, 
@@ -375,9 +361,6 @@ def draw_timeline(df, activity_colors):
                         
                         # Place the mini stars around the burst star
                         ax.imshow(mini_star_icon, extent=[x_pos - 1, x_pos + 1, y_pos - 1, y_pos + 1], aspect='auto', zorder=-1)
-            # Add text with activity description and time range
-            activity_description = f"{', '.join(activity_types)} - {start_time.strftime('%I:%M %p')} to {end_time.strftime('%I:%M %p')}"
-            
           
             
             # Store activity positions for connection (x and y coordinates)
@@ -394,7 +377,7 @@ def draw_timeline(df, activity_colors):
             # Check if the activity description contains "sleep" or "car ride"
             if "sleep" not in activity_description.lower() and "car ride" not in activity_description.lower() and "walking" not in activity_description.lower():
                 # Create the burst star (adjusted position) for activities that aren't "sleep" or "car ride"
-                burst_star = create_star(x[index], y[index] - 4, size=8)  # Decreased size and adjusted position
+                burst_star = create_star(x[index], y[index] - 4, size=12)  # Decreased size and adjusted position
                 burst_star.set_zorder(0)  # Set zorder to 0 to place it behind other elements
                 ax.add_patch(burst_star)
 
@@ -402,7 +385,7 @@ def draw_timeline(df, activity_colors):
                 wrapped_description = wrap_text(activity_description)
 
                 # Display the wrapped text
-                ax.text(x[index], y[index] - 4, wrapped_description, ha='center', va='center', fontsize=5, color='white', weight='bold', wrap=True, zorder=1)
+                ax.text(x[index], y[index] - 4, wrapped_description, ha='center', va='center', fontsize=8, color='black', weight='bold', wrap=True, zorder=1)
 
                 burst_counter += 1
             else:
